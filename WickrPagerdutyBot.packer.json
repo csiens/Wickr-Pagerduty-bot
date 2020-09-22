@@ -1,0 +1,48 @@
+{
+    "builders": [{
+      "type": "docker",
+      "image": "tiangolo/uwsgi-nginx:python3.8",
+      "commit": "true",
+      "changes": ["ENTRYPOINT /start.sh"]
+    }],
+    "provisioners": [
+      {
+        "type": "file",
+        "source": "WickrPagerdutyBot.py",
+        "destination": "/tmp/main.py"
+      },
+      {
+        "type": "shell",
+        "inline": [
+          "pip install flask requests redis",
+          "mv /tmp/main.py /app/main.py", 
+          "echo 'enable-threads = true' >> /app/uwsgi.ini", 
+          "apt-get update", 
+          "apt-get install -y redis-server",
+          "echo '' >> /etc/supervisor/conf.d/supervisord.conf",
+          "echo '[program:redis]' >> /etc/supervisor/conf.d/supervisord.conf", 
+          "echo 'command=/usr/bin/redis-server' >> /etc/supervisor/conf.d/supervisord.conf",
+          "echo 'stdout_logfile=/dev/stdout' >> /etc/supervisor/conf.d/supervisord.conf",
+          "echo 'stdout_logfile_maxbytes=0' >> /etc/supervisor/conf.d/supervisord.conf",
+          "echo 'stderr_logfile=/dev/stderr' >> /etc/supervisor/conf.d/supervisord.conf",
+          "echo 'stderr_logfile_maxbytes=0' >> /etc/supervisor/conf.d/supervisord.conf"
+        ]
+      }
+    ],
+    "post-processors": [
+      [
+        {
+          "type": "docker-tag",
+          "repository": "csiens/wickrio-pagerduty-bot",
+          "tag": "0.1"
+        },
+        {
+          "type": "docker-push",
+          "login": "true",
+          "login_username": "csiens",
+          "login_password": ""
+        }
+      ]
+    ]
+  }
+  
